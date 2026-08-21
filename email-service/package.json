@@ -1,0 +1,11 @@
+{
+  "name": "email-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^1.0.3",
+    "dotenv": "^17.4.2",
+    "nodemailer": "^6.10.0"
+  }
+}
