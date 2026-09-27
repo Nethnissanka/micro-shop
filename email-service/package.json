@@ -2,6 +2,9 @@
   "name": "email-service",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^1.0.3",

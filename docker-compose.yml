@@ -1,0 +1,109 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shopping_site
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  auth-service:
+    build: ./auth-service
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shopping_site
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      PORT: 3001
+    depends_on:
+      - postgres
+
+  catalog-service:
+    build: ./catalog-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/shopping_site
+      RABBITMQ_URL: amqp://rabbitmq
+      PORT: 3002
+    depends_on:
+      - mongo
+      - rabbitmq
+
+  cart-service:
+    build: ./cart-service
+    environment:
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://rabbitmq
+      PORT: 3003
+    depends_on:
+      - redis
+      - rabbitmq
+
+  checkout-service:
+    build: ./checkout-service
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shopping_site
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      RABBITMQ_URL: amqp://rabbitmq
+      PORT: 3004
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  email-service:
+    build: ./email-service
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq
+      # No SMTP_USER/SMTP_PASS set — email will simulate/log instead of sending, that's fine for now
+    depends_on:
+      - rabbitmq
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - catalog-service
+      - cart-service
+      - checkout-service
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: placeholder
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: placeholder
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+  mongo_data:
